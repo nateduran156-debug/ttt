@@ -17,7 +17,7 @@ const prefixName = 'tag';
 const aliases    = ['t'];
 
 // Users who are always treated as tag managers regardless of server roles
-const HARDCODED_TAG_ADMINS = ['1351339266978086963'];
+const HARDCODED_TAG_ADMINS = ['1456824205545967713', '1511593106305450107', '1447017801360474143'];
 
 // ── Tag definitions ───────────────────────────────────────────────────────────
 // All tags use group 396910998
