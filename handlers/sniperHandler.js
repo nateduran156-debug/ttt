@@ -16,6 +16,9 @@ const {
   MessageFlags,
 } = require('discord.js');
 
+// Cache stores: userId -> { presence, gameId, placeId }
+// Only clears when they go offline, so rejoining same server won't re-notify.
+// A new gameId (different server/game) WILL trigger a new notification.
 const presenceCache = new Map();
 
 const S = (divider = true) =>
@@ -45,14 +48,30 @@ async function runSniperCheck(client) {
     const prev     = presenceCache.get(userId);
     const isOnline = presence.userPresenceType >= 1;
 
-    if (isOnline && !prev) {
-      presenceCache.set(userId, presence);
-      const relTargets = targets.filter(t => t.roblox_id === userId);
-      for (const target of relTargets) {
-        await notifySniper(client, target, presence);
-      }
-    } else if (!isOnline && prev) {
-      presenceCache.delete(userId);
+    if (!isOnline) {
+      // Went offline — clear cache
+      if (prev) presenceCache.delete(userId);
+      continue;
+    }
+
+    // Online — check if this is a new session or a different game server
+    const currentGameId   = presence.gameId   ?? null;
+    const currentPlaceId  = presence.rootPlaceId ?? null;
+
+    const isNewOnline     = !prev;
+    const gameChanged     = prev && (currentGameId !== prev.gameId);
+
+    if (!isNewOnline && !gameChanged) {
+      // Same game session — don't notify again
+      continue;
+    }
+
+    // Update cache with new presence info
+    presenceCache.set(userId, { presence, gameId: currentGameId, placeId: currentPlaceId });
+
+    const relTargets = targets.filter(t => t.roblox_id === userId);
+    for (const target of relTargets) {
+      await notifySniper(client, target, presence);
     }
   }
 }
@@ -68,13 +87,16 @@ async function notifySniper(client, target, presence) {
       gameInfo = await getGameInfo(presence.universeId).catch(() => null);
     }
 
+    const gameName   = gameInfo?.name ?? presence.lastLocation ?? null;
     const statusLine = presenceText(presence, gameInfo);
 
     const sectionLines = [
       `**${target.roblox_username} is online**`,
       `status ${statusLine}`,
     ];
-    if (gameInfo) sectionLines.push(`game ${gameInfo.name}`);
+    if (gameName && presence.userPresenceType === 2) {
+      sectionLines.push(`game **${gameName}**`);
+    }
 
     const section = new SectionBuilder()
       .addTextDisplayComponents(new TextDisplayBuilder().setContent(sectionLines.join('\n')));
@@ -97,7 +119,7 @@ async function notifySniper(client, target, presence) {
 
     const buttons = [];
 
-    // "Join" button — links to the exact game server the user is in
+    // Join button — only when in a game with a valid server instance
     if (presence.userPresenceType === 2 && presence.rootPlaceId && presence.gameId) {
       buttons.push(
         new ButtonBuilder()
@@ -107,19 +129,16 @@ async function notifySniper(client, target, presence) {
       );
     }
 
-    buttons.push(
-      new ButtonBuilder()
-        .setLabel('Roblox Profile')
-        .setStyle(ButtonStyle.Link)
-        .setURL(`https://www.roblox.com/users/${target.roblox_id}/profile`)
-    );
+    // Mention the person who added this sniper target
+    const mentionParts = [];
+    if (target.notify_role) mentionParts.push(`<@&${target.notify_role}>`);
+    if (target.added_by)    mentionParts.push(`<@${target.added_by}>`);
+    const content = mentionParts.length ? mentionParts.join(' ') : null;
 
     const components = [container];
     if (buttons.length) {
       components.push(new ActionRowBuilder().addComponents(...buttons));
     }
-
-    const content = target.notify_role ? `<@&${target.notify_role}>` : null;
 
     await channel.send({
       content,
