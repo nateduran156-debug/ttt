@@ -316,6 +316,7 @@ module.exports = {
       // ── Staff ticket buttons ─────────────────────────────────────────────────
       if (
         id === 'ticket_close' ||
+        id === 'ticket_accept_group' ||
         id === 'tag_req_deny' ||
         id.startsWith('ticket_verify_') ||
         id.startsWith('ticket_kick_') ||

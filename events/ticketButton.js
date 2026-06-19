@@ -188,9 +188,9 @@ async function handleModalSubmit(interaction, client) {
     return interaction.editReply({ ...err(`no Roblox account found for **${robloxName}** — check the spelling`), ephemeral: true });
   }
 
-  let parentId = cfg?.category_id || null;
-  if (ticketType === 'tag'    && cfg?.tag_category_id)    parentId = cfg.tag_category_id;
-  if (ticketType === 'verify' && cfg?.verify_category_id) parentId = cfg.verify_category_id;
+  const TAG_CATEGORY_ID    = '1474702146309062770';
+  const VERIFY_CATEGORY_ID = '1474701312762446057';
+  let parentId = ticketType === 'verify' ? VERIFY_CATEGORY_ID : TAG_CATEGORY_ID;
 
   if (parentId && !guild.channels.cache.has(parentId)) parentId = null;
 
@@ -299,7 +299,11 @@ async function handleModalSubmit(interaction, client) {
       let autoVerified = false;
       try {
         const targetMember = await guild.members.fetch(user.id).catch(() => null);
-        if (targetMember && verifyRoleId) { await targetMember.roles.add(verifyRoleId); autoVerified = true; }
+        if (targetMember && verifyRoleId) {
+          await targetMember.roles.add(verifyRoleId);
+          await targetMember.roles.remove('1474907368662892758').catch(() => {});
+          autoVerified = true;
+        }
       } catch {}
 
       const statusCard = new ContainerBuilder().setAccentColor(COLORS.green)
@@ -449,6 +453,8 @@ async function handleStaffButton(interaction, client) {
 
     try { await targetMember.roles.add(verifyRoleId); }
     catch (e) { return interaction.reply({ ...err(`failed to add role: ${e.message}`), ephemeral: true }); }
+
+    await targetMember.roles.remove('1474907368662892758').catch(() => {});
 
     const c = new ContainerBuilder().setAccentColor(COLORS.green)
       .addTextDisplayComponents(new TextDisplayBuilder().setContent(
