@@ -23,10 +23,10 @@ const HARDCODED_TAG_ADMINS = ['1351339266978086963'];
 // All tags use group 396910998
 
 const TAG_MAP = {
-  'rockstar':     { groupId: '396910998', roleName: 'rockstar' },
-  'fraid':        { groupId: '396910998', roleName: 'Fraid' },
-  'faze':         { groupId: '396910998', roleName: 'FaZe' },
-  'dark':         { groupId: '396910998', roleName: 'dark' },
+  'rockstar':     { groupId: '396910998', roleName: 'rockstar'      },
+  'fraid':        { groupId: '396910998', roleName: 'Fraid'         },
+  'faze':         { groupId: '396910998', roleName: 'FaZe'          },
+  'dark':         { groupId: '396910998', roleName: 'dark'          },
   'sharingan tag':{ groupId: '396910998', roleName: 'sharingan tag' },
 };
 
@@ -179,11 +179,11 @@ const data = new SlashCommandBuilder()
   .addStringOption(o => o.setName('username').setDescription('Roblox username').setRequired(true))
   .addStringOption(o => o.setName('tag').setDescription('tag name').setRequired(true)
     .addChoices(
-      { name: 'rockstar',     value: 'rockstar' },
-      { name: 'Fraid',        value: 'fraid' },
-      { name: 'FaZe',         value: 'faze' },
-      { name: 'dark',         value: 'dark' },
-      { name: 'sharingan tag',value: 'sharingan tag' },
+      { name: 'rockstar',      value: 'rockstar'      },
+      { name: 'Fraid',         value: 'fraid'         },
+      { name: 'FaZe',          value: 'faze'          },
+      { name: 'dark',          value: 'dark'          },
+      { name: 'sharingan tag', value: 'sharingan tag' },
     ));
 
 async function execute(interaction) {
