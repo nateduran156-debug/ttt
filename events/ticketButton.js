@@ -34,9 +34,9 @@ const HARDCODED_TAG_ADMINS = ['1351339266978086963'];
 const TAG_CHOICES = [
   { label: 'rockstar',      value: 'rockstar'      },
   { label: 'Fraid',         value: 'fraid'         },
-  { label: 'FaZe',          value: 'faze'          },
-  { label: 'dark',          value: 'dark'          },
-  { label: 'sharingan tag', value: 'sharingan tag' },
+  { label: 'FaZe',          value: 'faze'           },
+  { label: 'dark',          value: 'dark'           },
+  { label: 'sharingan tag', value: 'sharingan tag'  },
 ];
 
 const TAG_MAP = {
@@ -310,8 +310,6 @@ async function handleModalSubmit(interaction, client) {
         .addSeparatorComponents(S(false))
         .addTextDisplayComponents(new TextDisplayBuilder().setContent(`-# /fazee`));
       await channel.send({ flags: CV2, components: [statusCard] });
-
-      setTimeout(() => { closeTicket(channel.id); ticketGroupsCache.delete(channel.id); channel.delete().catch(() => {}); }, 8000);
     } else {
       const statusCard = new ContainerBuilder().setAccentColor(inGroup ? COLORS.green : COLORS.red)
         .addTextDisplayComponents(new TextDisplayBuilder().setContent(
