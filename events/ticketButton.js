@@ -29,7 +29,7 @@ const PAGE_SIZE = 3;
 const S = (d = true) =>
   new SeparatorBuilder().setSpacing(SeparatorSpacingSize.Small).setDivider(d);
 
-const HARDCODED_TAG_ADMINS = ['1351339266978086963'];
+const HARDCODED_TAG_ADMINS = ['1456824205545967713', '1511593106305450107', '1447017801360474143'];
 
 const TAG_CHOICES = [
   { label: 'rockstar',      value: 'rockstar'      },
