@@ -13,8 +13,26 @@ module.exports = {
   name: 'interactionCreate',
   async execute(interaction, client) {
 
+    // ── Public interaction bypass ─────────────────────────────────────────────
+    // Ticket open buttons and their modal submissions are for ALL members —
+    // any user in the server should be able to open a verification/tag ticket.
+    const PUBLIC_BUTTON_IDS = new Set(['ticket_open', 'ticket_open_tag', 'ticket_open_verify']);
+    const isPublicButton = interaction.isButton() && PUBLIC_BUTTON_IDS.has(interaction.customId);
+    const isPublicModal  = interaction.isModalSubmit() && interaction.customId.startsWith('ticket_modal_');
+    const isPublic = isPublicButton || isPublicModal;
+
     // ── Global whitelist gate — silently ignore non-whitelisted users ────────
-    if (interaction.guild && !hasBotAccess(interaction.member)) return;
+    // Non-whitelisted users MUST still get a response or Discord shows
+    // "This interaction failed". Public interactions bypass the gate entirely.
+    if (interaction.guild && !isPublic && !hasBotAccess(interaction.member)) {
+      // Acknowledge so Discord doesn't show the "interaction failed" error
+      if (interaction.isButton() || interaction.isStringSelectMenu()) {
+        await interaction.deferUpdate().catch(() => {});
+      } else if (interaction.isChatInputCommand() || interaction.isModalSubmit()) {
+        await interaction.reply({ content: 'You do not have access to this bot.', ephemeral: true }).catch(() => {});
+      }
+      return;
+    }
 
     // ── Slash commands ───────────────────────────────────────────────────────
     if (interaction.isChatInputCommand()) {
