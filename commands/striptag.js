@@ -2,7 +2,7 @@
 
 const { SlashCommandBuilder, PermissionFlagsBits } = require('discord.js');
 const { ok, err, card, COLORS }   = require('../utils/components');
-const { getVerifyConfig, getAllLinkedUsers } = require('../utils/database');
+const { getVerifyConfig, getAnyVerifyConfig, getAllLinkedUsers } = require('../utils/database');
 const { getUserByUsername, getUserById, getGroupRoles, getUserRankInGroup, rankUser } = require('../utils/roblox');
 const { isWhitelisted } = require('../utils/whitelist');
 const { OWNER_IDS } = require('../utils/constants');
@@ -13,8 +13,8 @@ const aliases    = ['tagstrip', 'st'];
 
 // Groups and the role to strip back to
 const STRIP_GROUPS = [
-  { groupId: '948951510', baseRole: 'Unverified' },
-  { groupId: '575770529', baseRole: 'Member' },
+  { groupId: '35914267',  baseRole: 'MEMBERS' },
+  { groupId: '396910998', baseRole: 'Member'  },
 ];
 
 async function getBaseRoleIds(cookie) {
@@ -44,6 +44,8 @@ async function stripOne(robloxId, baseRoles, cookie) {
 
 function isTagManager(member, authorId, guildId) {
   if (OWNER_IDS.includes(authorId)) return true;
+  // In DMs there is no member/guild — only hardcoded owners pass
+  if (!member || !guildId) return false;
   if (isWhitelisted(member, 'all')) return true;
   if (isWhitelisted(member, 'tags')) return true;
   if (isWhitelisted(member, 'roblox')) return true;
@@ -56,7 +58,7 @@ function isTagManager(member, authorId, guildId) {
 }
 
 async function run(guildId, channel, target, reply) {
-  const cfg = getVerifyConfig(guildId);
+  const cfg = (guildId ? getVerifyConfig(guildId) : null) ?? getAnyVerifyConfig();
   if (!cfg?.cookie) return reply(err('No Roblox cookie set. Use `.setcookie <cookie>` first.'));
 
   await channel?.sendTyping?.().catch(() => {});
@@ -122,7 +124,7 @@ async function run(guildId, channel, target, reply) {
 // ── Prefix ────────────────────────────────────────────────────────────────────
 
 async function prefixExecute(message, args) {
-  if (!isTagManager(message.member, message.author.id, message.guild.id))
+  if (!isTagManager(message.member, message.author.id, message.guild?.id))
     return message.reply(err('You are not authorised to use this command.'));
 
   const target = args.join(' ').trim();
@@ -135,7 +137,7 @@ async function prefixExecute(message, args) {
     color: 0x000000,
   }));
 
-  return run(message.guild.id, message.channel, target, p => message.reply(p));
+  return run(message.guild?.id ?? null, message.channel, target, p => message.reply(p));
 }
 
 // ── Slash ─────────────────────────────────────────────────────────────────────

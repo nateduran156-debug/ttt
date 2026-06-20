@@ -4,12 +4,12 @@ const { ok, err, card, COLORS, CV2 } = require('../utils/components');
 const {
   getUserByUsername, getUserById, getGroupRoles, rankUser, getUserRankInGroup, getHeadshot,
 } = require('../utils/roblox');
-const { getVerifyConfig, getTagLogChannel } = require('../utils/database');
+const { getVerifyConfig, getTagLogChannel, getAnyVerifyConfig } = require('../utils/database');
 const { isWhitelisted } = require('../utils/whitelist');
 const {
   ContainerBuilder, TextDisplayBuilder, SeparatorBuilder, SeparatorSpacingSize,
   SectionBuilder, ThumbnailBuilder, MessageFlags,
-  PermissionFlagsBits,
+  PermissionFlagsBits, ApplicationIntegrationType, InteractionContextType,
 } = require('discord.js');
 
 const category   = 'roblox';
@@ -20,17 +20,21 @@ const aliases    = ['t'];
 const HARDCODED_TAG_ADMINS = ['1456824205545967713', '1511593106305450107', '1447017801360474143'];
 
 // ── Tag definitions ───────────────────────────────────────────────────────────
-// All tags use group 396910998
+// Group 396910998 (glory group) + Group 35914267 (tag group)
 
 const TAG_MAP = {
   'rockstar':     { groupId: '396910998', roleName: 'rockstar'      },
-  'fraid':        { groupId: '396910998', roleName: 'Fraid'         },
+  'fraid':        { groupId: '396910998', roleName: 'fraid'         },
   'faze':         { groupId: '396910998', roleName: 'FaZe'          },
   'dark':         { groupId: '396910998', roleName: 'dark'          },
   'sharingan tag':{ groupId: '396910998', roleName: 'sharingan tag' },
+  'red':          { groupId: '35914267',  roleName: 'RED [TAG]'     },
+  'blue':         { groupId: '35914267',  roleName: 'BLUE [TAG]'    },
+  'pink':         { groupId: '35914267',  roleName: 'PINK [TAG]'    },
+  'purple':       { groupId: '35914267',  roleName: 'PURPLE [TAG]'  },
 };
 
-const TAG_DISPLAY = ['rockstar', 'Fraid', 'FaZe', 'dark', 'sharingan tag'];
+const TAG_DISPLAY = ['rockstar', 'fraid', 'FaZe', 'dark', 'sharingan tag', 'RED [TAG]', 'BLUE [TAG]', 'PINK [TAG]', 'PURPLE [TAG]'];
 
 const S = (d = true) => new SeparatorBuilder().setSpacing(SeparatorSpacingSize.Small).setDivider(d);
 
@@ -73,6 +77,8 @@ function resolveTag(input) {
 function isTagManager(ctx) {
   const userId = ctx.author?.id ?? ctx.user?.id;
   if (HARDCODED_TAG_ADMINS.includes(userId)) return true;
+  // In DMs there is no guild/member — only hardcoded admins can use the command
+  if (!ctx.guild || !ctx.member) return false;
   if (isWhitelisted(ctx.member, 'all')) return true;
   if (isWhitelisted(ctx.member, 'tags')) return true;
   if (isWhitelisted(ctx.member, 'roblox')) return true;
@@ -117,10 +123,11 @@ async function prefixExecute(message, args) {
     }));
   }
 
-  await message.channel.sendTyping().catch(() => {});
+  await message.channel.sendTyping?.().catch(() => {});
 
-  const cfg = getVerifyConfig(message.guild.id);
-  if (!cfg?.cookie) {
+  const cfg = message.guild ? getVerifyConfig(message.guild.id) : null;
+  const effectiveCfg = cfg ?? getAnyVerifyConfig();
+  if (!effectiveCfg?.cookie) {
     return message.reply(err('No Roblox cookie configured. Use `.setcookie <cookie>` first.'));
   }
 
@@ -136,7 +143,7 @@ async function prefixExecute(message, args) {
 
   let roles;
   try {
-    roles = await getGroupRoles(tagDef.groupId, cfg.cookie);
+    roles = await getGroupRoles(tagDef.groupId, effectiveCfg.cookie);
   } catch {
     return message.reply(err(`Failed to fetch roles for group \`${tagDef.groupId}\`.`));
   }
@@ -152,7 +159,7 @@ async function prefixExecute(message, args) {
   }
 
   try {
-    await rankUser(tagDef.groupId, robloxUser.id, role.id, cfg.cookie);
+    await rankUser(tagDef.groupId, robloxUser.id, role.id, effectiveCfg.cookie);
   } catch (e) {
     return message.reply(err(`Failed to apply tag: ${e.message}`));
   }
@@ -176,14 +183,20 @@ const { SlashCommandBuilder } = require('discord.js');
 const data = new SlashCommandBuilder()
   .setName('tag')
   .setDescription('apply a Roblox group tag to a user')
+  .setIntegrationTypes([ApplicationIntegrationType.GuildInstall, ApplicationIntegrationType.UserInstall])
+  .setContexts([InteractionContextType.Guild, InteractionContextType.BotDM, InteractionContextType.PrivateChannel])
   .addStringOption(o => o.setName('username').setDescription('Roblox username').setRequired(true))
   .addStringOption(o => o.setName('tag').setDescription('tag name').setRequired(true)
     .addChoices(
       { name: 'rockstar',      value: 'rockstar'      },
-      { name: 'Fraid',         value: 'fraid'         },
+      { name: 'fraid',         value: 'fraid'         },
       { name: 'FaZe',          value: 'faze'          },
       { name: 'dark',          value: 'dark'          },
       { name: 'sharingan tag', value: 'sharingan tag' },
+      { name: 'RED [TAG]',     value: 'red'           },
+      { name: 'BLUE [TAG]',    value: 'blue'          },
+      { name: 'PINK [TAG]',    value: 'pink'          },
+      { name: 'PURPLE [TAG]',  value: 'purple'        },
     ));
 
 async function execute(interaction) {
@@ -209,7 +222,8 @@ async function execute(interaction) {
     }));
   }
 
-  const cfg = getVerifyConfig(interaction.guild.id);
+  const guildCfg = interaction.guild ? getVerifyConfig(interaction.guild.id) : null;
+  const cfg = guildCfg ?? getAnyVerifyConfig();
   if (!cfg?.cookie) {
     return interaction.editReply(err('No Roblox cookie configured. Use `.setcookie <cookie>` first.'));
   }
