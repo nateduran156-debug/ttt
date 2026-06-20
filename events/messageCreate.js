@@ -6,10 +6,39 @@ const { err }               = require('../utils/components');
 const { OWNER_ID }          = require('../utils/constants');
 const { PermissionFlagsBits } = require('discord.js');
 
+// Tag-related commands allowed in DMs
+const DM_ALLOWED_CMDS = new Set(['tag', 't', 'striptag', 'tagstrip', 'st']);
+
 module.exports = {
   name: 'messageCreate',
   async execute(message, client) {
-    if (message.author.bot || !message.guild) return;
+    if (message.author.bot) return;
+
+    // ── DM handling — only tag-related commands allowed ──────────────────────
+    if (!message.guild) {
+      const prefix = '!';
+      if (!message.content.startsWith(prefix)) return;
+      const args    = message.content.slice(prefix.length).trim().split(/\s+/);
+      const cmdName = args.shift().toLowerCase();
+      if (!DM_ALLOWED_CMDS.has(cmdName)) return;
+
+      const resolved = client.aliases.get(cmdName);
+      const finalCmd = resolved ?? cmdName;
+      const cmd = client.commands.get(finalCmd);
+      if (!cmd || typeof cmd.prefixExecute !== 'function') return;
+
+      // DM context: no guild/member, fabricate a minimal message object
+      const dmMessage = Object.assign(Object.create(Object.getPrototypeOf(message)), message, {
+        guild: null, member: null,
+      });
+      try {
+        await cmd.prefixExecute(dmMessage, args);
+      } catch (e) {
+        console.error(`[MessageCreate DM] Error in ${finalCmd}: ${e.message}`);
+        message.reply(`An error occurred: ${e.message}`).catch(() => {});
+      }
+      return;
+    }
 
     ensureGuild(message.guild.id);
 

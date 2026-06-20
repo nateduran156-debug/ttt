@@ -33,18 +33,26 @@ const HARDCODED_TAG_ADMINS = ['1456824205545967713', '1511593106305450107', '144
 
 const TAG_CHOICES = [
   { label: 'rockstar',      value: 'rockstar'      },
-  { label: 'Fraid',         value: 'fraid'         },
-  { label: 'FaZe',          value: 'faze'           },
-  { label: 'dark',          value: 'dark'           },
-  { label: 'sharingan tag', value: 'sharingan tag'  },
+  { label: 'fraid',         value: 'fraid'         },
+  { label: 'FaZe',          value: 'faze'          },
+  { label: 'dark',          value: 'dark'          },
+  { label: 'sharingan tag', value: 'sharingan tag' },
+  { label: 'RED [TAG]',     value: 'red'           },
+  { label: 'BLUE [TAG]',    value: 'blue'          },
+  { label: 'PINK [TAG]',    value: 'pink'          },
+  { label: 'PURPLE [TAG]',  value: 'purple'        },
 ];
 
 const TAG_MAP = {
   'rockstar':     { groupId: '396910998', roleName: 'rockstar'      },
-  'fraid':        { groupId: '396910998', roleName: 'Fraid'         },
+  'fraid':        { groupId: '396910998', roleName: 'fraid'         },
   'faze':         { groupId: '396910998', roleName: 'FaZe'          },
   'dark':         { groupId: '396910998', roleName: 'dark'          },
   'sharingan tag':{ groupId: '396910998', roleName: 'sharingan tag' },
+  'red':          { groupId: '35914267',  roleName: 'RED [TAG]'     },
+  'blue':         { groupId: '35914267',  roleName: 'BLUE [TAG]'    },
+  'pink':         { groupId: '35914267',  roleName: 'PINK [TAG]'    },
+  'purple':       { groupId: '35914267',  roleName: 'PURPLE [TAG]'  },
 };
 
 const ticketGroupsCache = new Map();

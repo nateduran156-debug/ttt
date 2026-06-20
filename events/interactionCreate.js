@@ -21,10 +21,14 @@ module.exports = {
     const isPublicModal  = interaction.isModalSubmit() && interaction.customId.startsWith('ticket_modal_');
     const isPublic = isPublicButton || isPublicModal;
 
+    // Tag-related slash commands are allowed globally (including DMs)
+    const TAG_GLOBAL_CMDS = new Set(['tag', 'striptag']);
+    const isTagGlobal = interaction.isChatInputCommand() && TAG_GLOBAL_CMDS.has(interaction.commandName);
+
     // ── Global whitelist gate — silently ignore non-whitelisted users ────────
     // Non-whitelisted users MUST still get a response or Discord shows
     // "This interaction failed". Public interactions bypass the gate entirely.
-    if (interaction.guild && !isPublic && !hasBotAccess(interaction.member)) {
+    if (interaction.guild && !isPublic && !isTagGlobal && !hasBotAccess(interaction.member)) {
       // Acknowledge so Discord doesn't show the "interaction failed" error
       if (interaction.isButton() || interaction.isStringSelectMenu()) {
         await interaction.deferUpdate().catch(() => {});
@@ -41,7 +45,8 @@ module.exports = {
 
       const category = cmd.category || 'all';
 
-      if (!isWhitelisted(interaction.member, category)) return;
+      // In DMs there is no member — skip whitelist check (isTagGlobal already validated above)
+      if (interaction.guild && !isWhitelisted(interaction.member, category)) return;
 
       try {
         await cmd.execute(interaction, client);
